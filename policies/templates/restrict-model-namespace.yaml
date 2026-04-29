@@ -1,0 +1,34 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: restrictmodelnamespace
+spec:
+  crd:
+    spec:
+      names:
+        kind: RestrictModelNamespace
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            parameters:
+              type: object
+              required:
+                - allowedNamespace
+              properties:
+                allowedNamespace:
+                  type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package restrictmodelnamespace
+
+        violation[{"msg": msg}] {
+          input.review.object.metadata.labels["app.kubernetes.io/component"] == "model"
+          namespace := input.review.object.metadata.namespace
+          namespace != input.parameters.allowedNamespace
+          msg := sprintf(
+            "Pods labelled app.kubernetes.io/component=model must run in <%v>, got <%v>",
+            [input.parameters.allowedNamespace, namespace]
+          )
+        }

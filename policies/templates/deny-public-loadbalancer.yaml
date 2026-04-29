@@ -1,0 +1,38 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: denypublicloadbalancer
+spec:
+  crd:
+    spec:
+      names:
+        kind: DenyPublicLoadBalancer
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            parameters:
+              type: object
+              properties:
+                allowedNamespaces:
+                  type: array
+                  items:
+                    type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package denypublicloadbalancer
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.type == "LoadBalancer"
+          namespace := input.review.object.metadata.namespace
+          not namespace_allowed(namespace)
+          msg := sprintf(
+            "Service type LoadBalancer not permitted in namespace <%v>. Allowed namespaces: %v",
+            [namespace, input.parameters.allowedNamespaces]
+          )
+        }
+
+        namespace_allowed(namespace) {
+          input.parameters.allowedNamespaces[_] == namespace
+        }

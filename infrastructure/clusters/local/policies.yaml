@@ -1,0 +1,31 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-policies-templates
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./policies/templates
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: opa-gatekeeper
+  timeout: 3m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-policies-constraints
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./policies/constraints
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: platform-policies-templates
+  timeout: 3m
