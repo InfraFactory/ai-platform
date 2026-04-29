@@ -1,0 +1,63 @@
+# kube-prometheus-stack-values.yaml
+# Week 0 — local k3d bootstrap
+# Prometheus + Grafana only. No Loki/Tempo — added Week 8.
+
+# fullnameOverride: "prometheus"
+
+alertmanager:
+  enabled: false  # no alerting pipeline yet — added when there's something to alert on
+
+grafana:
+  enabled: true
+  adminPassword: "localdev"  # override at deploy time if you prefer env var
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false  # port-forward only for now
+  persistence:
+    enabled: false  # stateless Grafana is fine locally; dashboards will be managed as ConfigMaps
+  defaultDashboardsTimezone: "Australia/Melbourne"
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer  # local dev convenience — remove before any AKS deploy
+
+prometheus:
+  prometheusSpec:
+    retention: 24h  # k3d has limited disk; 24h is enough for daily dev sessions
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+    storageSpec: {}  # no PVC — ephemeral is fine; data resets per session
+    # Scrape all ServiceMonitors regardless of namespace label
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    # Same for PodMonitors
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+
+# Disable components that don't work in k3d
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# kube-state-metrics and node-exporter are fine in k3d
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+    failurePolicy: Ignore  # don't block pod creation if webhook is unavailable during restarts

@@ -56,6 +56,8 @@ You do not need an ADR for implementation details, minor config choices, or deci
 | # | Title | Status | Week |
 |---|-------|--------|------|
 | [0001](./0001-hub-spoke-vs-vwan.md) | Hub-Spoke vs vWAN | Proposed | 1 |
+| [0002](./0002-kubernetes-version-pin.md) | Kubernetes Version Pin | Proposed | 0 |
+| [0003](./0003-kube-prometheus-stack-version-pin.md) | kube-prometheus-stack Version Pin | Proposed | 0 |
 
 > Update this table whenever a new ADR is merged.
 

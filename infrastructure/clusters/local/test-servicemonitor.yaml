@@ -1,0 +1,12 @@
+# test-servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: test-discovery
+  namespace: test-discovery
+spec:
+  selector:
+    matchLabels:
+      app: test-discovery
+  endpoints:
+    - port: metrics

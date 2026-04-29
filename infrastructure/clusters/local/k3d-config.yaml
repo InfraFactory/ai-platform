@@ -1,0 +1,34 @@
+# k3d-config.yaml — save this in the repo root or infrastructure/clusters/local/
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+
+metadata:
+  name: ai-platform
+
+servers: 1        # control plane — don't run workloads here
+agents: 2         # worker nodes
+
+image: rancher/k3s:v1.34.3-k3s1   # pin this — don't use latest
+
+ports:
+  - port: 80:80     # HTTP ingress
+    nodeFilters:
+      - loadbalancer
+  - port: 443:443   # HTTPS ingress
+    nodeFilters:
+      - loadbalancer
+
+volumes:
+  - volume: /home/io/k3d/storage:/var/lib/rancher/k3s/storage # k3d-ai-platform-storage:/var/lib/rancher/k3s/storage
+    nodeFilters:
+      - all
+
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik    # disable built-in Traefik — you'll deploy your own in Week 3
+        nodeFilters:
+          - server:*
+      - arg: --disable=servicelb  # disable built-in LB — k3d's own loadbalancer handles this
+        nodeFilters:
+          - server:*
