@@ -5,6 +5,12 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  targetNamespace: gatekeeper-system
+  install:
+    crds: Create
+    createNamespace: false
+  upgrade:
+    crds: CreateReplace
   chart:
     spec:
       chart: gatekeeper
@@ -13,10 +19,6 @@ spec:
         kind: HelmRepository
         name: gatekeeper
         namespace: flux-system
-  install:
-    crds: Create
-  upgrade:
-    crds: CreateReplace
   values:
     replicas: 1
     auditInterval: 60
