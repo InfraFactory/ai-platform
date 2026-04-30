@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: break-limits
+  namespace: default
+spec:
+  containers:
+    - name: breach
+      image: busybox
+      command: ["sleep", "3600"]
+      # no resources block at all
