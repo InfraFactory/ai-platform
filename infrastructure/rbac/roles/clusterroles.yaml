@@ -19,7 +19,7 @@ rules:
     verbs: ["*"]
   - apiGroups: ["templates.gatekeeper.sh", "constraints.gatekeeper.sh", "config.gatekeeper.sh"]
     resources: ["*"]
-    verbs: ["get", "list", "watch"] # ["*"]
+    verbs: ["*"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
     verbs: ["get", "list", "watch"]

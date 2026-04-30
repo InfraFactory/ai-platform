@@ -12,18 +12,39 @@ spec:
       rego: |
         package k8snousedefaultserviceaccount
 
+        # --- Pod-level (bypass-proof backstop) ---
         violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
           input.review.object.spec.serviceAccountName == "default"
-          msg := sprintf(
-            "Pod '%v' uses the default ServiceAccount. Specify an explicit serviceAccountName.",
-            [input.review.object.metadata.name]
-          )
+          msg := sprintf("Pod '%v' uses the default ServiceAccount. Specify an explicit serviceAccountName.", [input.review.object.metadata.name])
+        }
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          not input.review.object.spec.serviceAccountName
+          msg := sprintf("Pod '%v' omits serviceAccountName — resolves to default. This is forbidden.", [input.review.object.metadata.name])
+        }
+
+        # --- Workload controller-level (fast feedback at apply time) ---
+        workload_kinds := {"Deployment", "StatefulSet", "Job"}
+
+        violation[{"msg": msg}] {
+          workload_kinds[input.review.kind.kind]
+          input.review.object.spec.template.spec.serviceAccountName == "default"
+          msg := sprintf("%v '%v' sets serviceAccountName to default in pod template. Specify an explicit serviceAccountName.", [input.review.kind.kind, input.review.object.metadata.name])
+        }
+        violation[{"msg": msg}] {
+          workload_kinds[input.review.kind.kind]
+          not input.review.object.spec.template.spec.serviceAccountName
+          msg := sprintf("%v '%v' omits serviceAccountName in pod template — resolves to default. This is forbidden.", [input.review.kind.kind, input.review.object.metadata.name])
         }
 
         violation[{"msg": msg}] {
-          not input.review.object.spec.serviceAccountName
-          msg := sprintf(
-            "Pod '%v' does not specify a serviceAccountName. The default SA will be used — this is forbidden.",
-            [input.review.object.metadata.name]
-          )
+          input.review.kind.kind == "CronJob"
+          input.review.object.spec.jobTemplate.spec.template.spec.serviceAccountName == "default"
+          msg := sprintf("CronJob '%v' sets serviceAccountName to default in job template. Specify an explicit serviceAccountName.", [input.review.object.metadata.name])
+        }
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "CronJob"
+          not input.review.object.spec.jobTemplate.spec.template.spec.serviceAccountName
+          msg := sprintf("CronJob '%v' omits serviceAccountName in job template — resolves to default. This is forbidden.", [input.review.object.metadata.name])
         }

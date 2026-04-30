@@ -293,6 +293,53 @@ and future tenant isolation policies.
 
 ---
 
+### 1.5 Policy Enforcement Gap — Documentation vs Admission Control
+
+During Week 2 DEVIATE work, a gap was identified between policy intent documented in this
+model and policy enforcement active in the cluster. A `K8sNoUseDefaultServiceAccount`
+ConstraintTemplate and Constraint were authored and committed to the repository but were
+not referenced in `policies/templates/kustomization.yaml` and
+`policies/constraints/kustomization.yaml`. Flux never reconciled them. The test workload
+used the `default` ServiceAccount and was not blocked at admission.
+
+**The principle this establishes:**
+
+> A policy document is not an enforcement mechanism. A Gatekeeper ConstraintTemplate is
+> not an enforcement mechanism until it is reconciled into the cluster. The gap between
+> "present in the repository" and "active at admission" is real, silent, and must be
+> verified explicitly.
+
+**The verification step — run after authoring any new policy file:**
+
+```bash
+# What the repo declares
+ls policies/templates/
+ls policies/constraints/
+
+# What Gatekeeper actually has
+kubectl get constrainttemplates
+kubectl get constraints
+
+# These two lists must match. Any file present on disk but absent from
+# kubectl output is not enforced — it is documentation only.
+```
+
+This check must be performed after every new ConstraintTemplate is authored, and should
+be included in platform runbooks as a post-deploy verification step.
+
+**Relationship to Section 1.4:**
+
+Section 1.4 states that the `default` ServiceAccount must not be used for any workload.
+That is a documentation decision. The corresponding enforcement mechanism is the
+`K8sNoUseDefaultServiceAccount` constraint, which enforces this at admission for Pods,
+Deployments, StatefulSets, Jobs, and CronJobs. Both must be present and consistent.
+If the constraint is absent or in `dryrun` mode, Section 1.4 is an honour system.
+
+See [ADR-0006](./adr/0006-rbac-events-access-app-team-personas.md) for the full
+decision record including the dual-layer enforcement rationale and rollback procedure.
+
+---
+
 ## Part 2 — Azure RBAC
 
 ### 2.1 Managed Identity Strategy

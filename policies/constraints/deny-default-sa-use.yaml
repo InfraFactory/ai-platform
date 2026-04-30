@@ -8,6 +8,10 @@ spec:
     kinds:
       - apiGroups: [""]
         kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet"]
+      - apiGroups: ["batch"]
+        kinds: ["Job", "CronJob"]
     excludedNamespaces:
       - kube-system
       - gatekeeper-system
