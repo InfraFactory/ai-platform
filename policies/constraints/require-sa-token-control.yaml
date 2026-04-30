@@ -1,0 +1,17 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: RequireSATokenControl
+metadata:
+  name: require-sa-token-control
+spec:
+  enforcementAction: warn    # warn first — kong, cert-manager pods likely non-compliant
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - gatekeeper-system
+      - flux-system
+      - monitoring
