@@ -1,0 +1,36 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: requiresatokencontrol
+spec:
+  crd:
+    spec:
+      names:
+        kind: RequireSATokenControl
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package requiresatokencontrol
+
+        # True if automountServiceAccountToken is explicitly false
+        token_disabled {
+          input.review.object.spec.automountServiceAccountToken == false
+        }
+
+        # True if the pod declares the Workload Identity annotation
+        # (meaning token mounting is intentional — OIDC exchange requires it)
+        has_workload_identity {
+          input.review.object.metadata.annotations["azure.workload.identity/use"] == "true"
+        }
+
+        violation[{"msg": msg}] {
+          # Token is mounted: field is absent (API server defaults to true)
+          # OR explicitly set to true
+          not token_disabled
+          # AND this is not a legitimate Workload Identity pod
+          not has_workload_identity
+          msg := sprintf(
+            "Pod <%v> auto-mounts a service account token. Set spec.automountServiceAccountToken: false, or add annotation azure.workload.identity/use: 'true' if this pod requires Azure resource access via Workload Identity.",
+            [input.review.object.metadata.name]
+          )
+        }

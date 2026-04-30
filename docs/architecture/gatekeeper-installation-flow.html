@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gatekeeper Installation Flow — Cloudville AI Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0c0f;
+    --surface:   #10141a;
+    --border:    #1e2530;
+    --border-hi: #2e3a4a;
+    --text:      #c8d4e0;
+    --muted:     #5a6a7a;
+    --faint:     #2a3340;
+
+    --gray:   #3a4450;
+    --gray-hi:#4a5560;
+    --purple: #5b3f8a;
+    --purple-hi:#7a56b8;
+    --purple-glow: rgba(91,63,138,0.25);
+    --teal:   #1d6b6b;
+    --teal-hi:#2a9494;
+    --teal-glow: rgba(29,107,107,0.25);
+    --blue:   #1a4a8a;
+    --blue-hi:#2a6abf;
+    --blue-glow: rgba(26,74,138,0.25);
+
+    --connector: #2e3a4a;
+    --warn:   #b87c2a;
+    --deny:   #8a2a2a;
+    --admit:  #2a6a3a;
+  }
+
+  html { background: var(--bg); }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header {
+    max-width: 960px;
+    margin: 0 auto 48px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  header .label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(20px, 3vw, 28px);
+    color: #e8f0f8;
+    line-height: 1.2;
+  }
+
+  header .meta {
+    margin-top: 12px;
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  header .meta span { display: flex; align-items: center; gap: 6px; }
+  header .meta .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal-hi);
+    display: inline-block;
+  }
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  .diagram {
+    max-width: 960px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* ── Step row ────────────────────────────────────────────── */
+  .step {
+    display: grid;
+    grid-template-columns: 40px 1fr 340px;
+    gap: 0 16px;
+    align-items: start;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .step:nth-child(1)  { animation-delay: 0.05s; }
+  .step:nth-child(2)  { animation-delay: 0.10s; }
+  .step:nth-child(3)  { animation-delay: 0.15s; }
+  .step:nth-child(4)  { animation-delay: 0.20s; }
+  .step:nth-child(5)  { animation-delay: 0.25s; }
+  .step:nth-child(6)  { animation-delay: 0.30s; }
+  .step:nth-child(7)  { animation-delay: 0.35s; }
+  .step:nth-child(8)  { animation-delay: 0.40s; }
+  .step:nth-child(9)  { animation-delay: 0.45s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Connector column ────────────────────────────────────── */
+  .connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 4px;
+  }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-num.gray   { background: var(--gray);   border: 1px solid var(--gray-hi);   color: #c8d4e0; }
+  .step-num.purple { background: var(--purple);  border: 1px solid var(--purple-hi); color: #d0c0f0; }
+  .step-num.teal   { background: var(--teal);    border: 1px solid var(--teal-hi);   color: #c0e8e8; }
+  .step-num.blue   { background: var(--blue);    border: 1px solid var(--blue-hi);   color: #b0cff0; }
+
+  .line {
+    width: 1px;
+    flex: 1;
+    min-height: 28px;
+    background: linear-gradient(to bottom, var(--border-hi), var(--border));
+    margin: 4px 0;
+  }
+
+  .step:last-child .line { display: none; }
+
+  /* ── Card ────────────────────────────────────────────────── */
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border-hi); }
+
+  .card.gray   { background: linear-gradient(135deg, #14181f 0%, #0f1318 100%); border-left: 3px solid var(--gray-hi); }
+  .card.purple { background: linear-gradient(135deg, #160e22 0%, #100b18 100%); border-left: 3px solid var(--purple-hi); }
+  .card.teal   { background: linear-gradient(135deg, #0a1818 0%, #071212 100%); border-left: 3px solid var(--teal-hi); }
+  .card.blue   { background: linear-gradient(135deg, #0a1220 0%, #070e18 100%); border-left: 3px solid var(--blue-hi); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: #e8f0f8;
+    margin-bottom: 4px;
+  }
+
+  .card-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .card-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .tag {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .tag.resource { border-color: var(--border-hi); color: var(--muted); background: var(--faint); }
+  .tag.warn     { border-color: var(--warn);  color: var(--warn);  background: rgba(184,124,42,0.1); }
+  .tag.deny     { border-color: var(--deny);  color: #d06060;      background: rgba(138,42,42,0.1); }
+  .tag.admit    { border-color: var(--admit); color: #60a870;      background: rgba(42,106,58,0.1); }
+  .tag.phase    { border-color: transparent;  color: var(--muted); background: transparent; padding-left: 0; }
+
+  /* ── Annotation ──────────────────────────────────────────── */
+  .annotation {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font-size: 11px;
+    line-height: 1.65;
+    color: #8a9aaa;
+  }
+
+  .annotation strong {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .annotation .highlight {
+    color: #b0c8e0;
+    font-weight: 500;
+  }
+
+  .annotation .warning-note {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-left: 2px solid var(--warn);
+    background: rgba(184,124,42,0.06);
+    color: #a08040;
+    font-size: 10px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .annotation .rca-note {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-left: 2px solid var(--deny);
+    background: rgba(138,42,42,0.06);
+    color: #a06060;
+    font-size: 10px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .annotation .success-note {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-left: 2px solid var(--admit);
+    background: rgba(42,106,58,0.06);
+    color: #60a870;
+    font-size: 10px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* ── Operational Notes ───────────────────────────────────── */
+  .ops-notes {
+    max-width: 960px;
+    margin: 40px auto 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ops-notes-header {
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ops-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: #e8f0f8;
+    letter-spacing: 0.05em;
+  }
+
+  .ops-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .ops-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+
+  @media (max-width: 700px) {
+    .ops-grid { grid-template-columns: 1fr; }
+  }
+
+  .ops-entry {
+    display: flex;
+    gap: 12px;
+    padding: 16px 18px;
+    font-size: 11px;
+    line-height: 1.65;
+    color: #7a8a9a;
+    border-right: 1px solid var(--border);
+  }
+
+  .ops-entry:last-child { border-right: none; }
+
+  .ops-entry.rca     { border-top: 2px solid var(--deny); }
+  .ops-entry.validated { border-top: 2px solid var(--admit); }
+
+  .ops-ref {
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+
+  .ops-entry.rca .ops-ref       { color: #a06060; }
+  .ops-entry.validated .ops-ref { color: #60a870; }
+
+  .ops-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #a0b0c0;
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+  }
+
+  .ops-ref-link {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .ops-content code {
+    font-size: 10px;
+    color: #90b0d0;
+    background: var(--faint);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* ── Legend ──────────────────────────────────────────────── */
+  .legend {
+    max-width: 960px;
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .legend-swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  footer {
+    max-width: 960px;
+    margin: 24px auto 0;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 700px) {
+    .step { grid-template-columns: 32px 1fr; }
+    .annotation { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">Cloudville AI Platform · Week 2 · Architecture Reference</div>
+  <h1>OPA Gatekeeper Installation Flow<br>via Flux GitOps</h1>
+  <div class="meta">
+    <span><span class="dot"></span>Gatekeeper 3.22.2</span>
+    <span>k3d · ai-platform cluster</span>
+    <span>9 steps · 3 policy types</span>
+    <span>2026-04-30</span>
+  </div>
+</header>
+
+<div class="diagram">
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num gray">01</div>
+      <div class="line"></div>
+    </div>
+    <div class="card gray">
+      <div class="card-title">flux bootstrap</div>
+      <div class="card-sub">github.com/InfraFactory/ai-platform · path: infrastructure/clusters/local</div>
+      <div class="card-resources">
+        <span class="tag resource">GitRepository</span>
+        <span class="tag resource">flux-system Kustomization</span>
+        <span class="tag resource">SSH deploy key</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>what this does</strong>
+      Installs the four Flux controllers into the cluster and commits
+      <span class="highlight">gotk-components.yaml</span> + <span class="highlight">gotk-sync.yaml</span>
+      into the repo. From this point Flux is self-managing — it watches its own
+      GitRepository and will restore any deleted controller from Git.
+      <div class="warning-note">
+        ⚠ flux-system/ in the repo is Flux-owned. Do not edit manually.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num purple">02</div>
+      <div class="line"></div>
+    </div>
+    <div class="card purple">
+      <div class="card-title">cluster kustomization reconciled</div>
+      <div class="card-sub">infrastructure/clusters/local/kustomization.yaml</div>
+      <div class="card-resources">
+        <span class="tag resource">opa-gatekeeper.yaml</span>
+        <span class="tag resource">policies.yaml</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>what this does</strong>
+      The cluster-level kustomization is the entry point Flux reads first.
+      It references two Flux <span class="highlight">Kustomization CRs</span> —
+      one for the Gatekeeper platform resources, one for the policy chain.
+      These are not kustomize files; they are Flux reconciliation objects.
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num purple">03</div>
+      <div class="line"></div>
+    </div>
+    <div class="card purple">
+      <div class="card-title">opa-gatekeeper resources applied</div>
+      <div class="card-sub">infrastructure/platform/opa-gatekeeper/</div>
+      <div class="card-resources">
+        <span class="tag resource">Namespace</span>
+        <span class="tag resource">HelmRepository</span>
+        <span class="tag resource">HelmRelease</span>
+        <span class="tag resource">Config CR</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>critical: targetNamespace</strong>
+      The HelmRelease must declare <span class="highlight">targetNamespace: gatekeeper-system</span>
+      explicitly. Omitting it deploys all chart resources into <span class="highlight">flux-system</span>,
+      where Gatekeeper's webhook then intercepts Flux's own reconciliation operations.
+      <div class="rca-note">⚑ N-1</div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num purple">04</div>
+      <div class="line"></div>
+    </div>
+    <div class="card purple">
+      <div class="card-title">chart fetched by helm-controller</div>
+      <div class="card-sub">open-policy-agent.github.io/gatekeeper/charts</div>
+      <div class="card-resources">
+        <span class="tag resource">gatekeeper@3.22.2</span>
+        <span class="tag resource">install.crds: Create</span>
+        <span class="tag resource">upgrade.crds: CreateReplace</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>version pinning</strong>
+      Chart version is pinned to <span class="highlight">3.22.2</span> in the HelmRelease spec.
+      <span class="highlight">crds: CreateReplace</span> is required on upgrade — Gatekeeper ships
+      CRDs inside the chart rather than separately, so Helm must be told to update them
+      on each chart upgrade, not just on first install.
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num teal">05</div>
+      <div class="line"></div>
+    </div>
+    <div class="card teal">
+      <div class="card-title">Helm installs into gatekeeper-system</div>
+      <div class="card-sub">pods scheduled · CRDs registered</div>
+      <div class="card-resources">
+        <span class="tag resource">gatekeeper-controller-manager</span>
+        <span class="tag resource">gatekeeper-audit</span>
+        <span class="tag resource">ConstraintTemplate CRD</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>two distinct processes</strong>
+      <span class="highlight">controller-manager</span> handles real-time admission —
+      it intercepts API server requests and enforces deny/warn decisions synchronously.
+      <span class="highlight">audit</span> runs on a configurable interval (60s here),
+      scanning existing resources for policy violations and populating
+      <code>.status.violations</code> on each Constraint object.
+    </div>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num teal">06</div>
+      <div class="line"></div>
+    </div>
+    <div class="card teal">
+      <div class="card-title">admission webhooks registered</div>
+      <div class="card-sub">API server begins routing admission requests to Gatekeeper</div>
+      <div class="card-resources">
+        <span class="tag resource">ValidatingWebhookConfiguration</span>
+        <span class="tag resource">MutatingWebhookConfiguration</span>
+        <span class="tag resource">check-ignore-label webhook</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>webhook failure modes</strong>
+      Gatekeeper registers with <span class="highlight">failurePolicy: Ignore</span>
+      by default in dev mode — a crashed Gatekeeper pod does not block all cluster operations.
+      In production, <span class="highlight">failurePolicy: Fail</span> is recommended
+      for security-critical policies. The <span class="highlight">check-ignore-label</span>
+      webhook fires on every namespace operation to check for exemption labels.
+    </div>
+  </div>
+
+  <!-- Step 7 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num teal">07</div>
+      <div class="line"></div>
+    </div>
+    <div class="card teal">
+      <div class="card-title">namespace exemptions active</div>
+      <div class="card-sub">config.gatekeeper.sh/v1alpha1 · name: config</div>
+      <div class="card-resources">
+        <span class="tag resource">flux-system</span>
+        <span class="tag resource">gatekeeper-system</span>
+        <span class="tag resource">kube-system</span>
+        <span class="tag resource">monitoring</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>why exemptions are not optional</strong>
+      The Gatekeeper Config CR excludes namespaces from webhook interception entirely.
+      Without <span class="highlight">flux-system</span> in the exclusion list,
+      Gatekeeper's webhook fires against Flux's own dry-run operations during
+      reconciliation — a misbehaving webhook can make GitOps-based recovery impossible.
+      <div class="rca-note">⚑ N-2</div>
+    </div>
+  </div>
+
+  <!-- Step 8 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num blue">08</div>
+      <div class="line"></div>
+    </div>
+    <div class="card blue">
+      <div class="card-title">ConstraintTemplates kustomization synced</div>
+      <div class="card-sub">policies/templates/ · dependsOn: opa-gatekeeper</div>
+      <div class="card-resources">
+        <span class="tag resource">RequireResourceLimits</span>
+        <span class="tag resource">DenyPublicLoadBalancer</span>
+        <span class="tag resource">RestrictModelNamespace</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>dependsOn is mandatory</strong>
+      The <span class="highlight">platform-policies-templates</span> Kustomization declares
+      <span class="highlight">dependsOn: opa-gatekeeper</span>. Without this, Flux may
+      attempt to apply ConstraintTemplates before the <span class="highlight">ConstraintTemplate
+      CRD</span> itself exists, producing an unresolvable API error. Each template compiles
+      its Rego bundle into the OPA engine — the CRD must pre-exist.
+    </div>
+  </div>
+
+  <!-- Step 9 -->
+  <div class="step">
+    <div class="connector">
+      <div class="step-num blue">09</div>
+      <div class="line"></div>
+    </div>
+    <div class="card blue">
+      <div class="card-title">Constraints kustomization synced</div>
+      <div class="card-sub">policies/constraints/ · dependsOn: platform-policies-templates</div>
+      <div class="card-resources">
+        <span class="tag warn">warn: require-resource-limits</span>
+        <span class="tag deny">deny: deny-public-loadbalancer</span>
+        <span class="tag deny">deny: restrict-model-namespace</span>
+      </div>
+    </div>
+    <div class="annotation">
+      <strong>enforcement action rationale</strong>
+      <span class="highlight">warn</span> on resource limits — existing platform pods
+      (kube-prometheus-stack) may not declare limits; a hard deny would block the
+      observability stack on day one. Switch to <span class="highlight">deny</span>
+      once all platform workloads are compliant.
+      <span class="highlight">deny</span> on LoadBalancer and model namespace — both are
+      targeted enough that a false positive requires a deliberate misconfiguration.
+      <div class="success-note">✓ V-1</div>
+    </div>
+  </div>
+
+</div><!-- /diagram -->
+
+<!-- ── Operational Notes ──────────────────────────────────────── -->
+<div class="ops-notes">
+  <div class="ops-notes-header">
+    <span class="ops-label">Operational Notes</span>
+    <span class="ops-sub">Recorded during deployment · InfraFactory/ai-platform · 2026-04-30</span>
+  </div>
+  <div class="ops-grid">
+    <div class="ops-entry rca">
+      <div class="ops-ref">⚑ N-1</div>
+      <div class="ops-content">
+        <div class="ops-title">targetNamespace omission causes webhook deadlock</div>
+        Omitting <code>targetNamespace</code> from the HelmRelease deploys Gatekeeper into
+        <code>flux-system</code>. The admission webhook registers against the wrong service
+        endpoint and begins intercepting Flux's own dry-run operations, returning 502 errors
+        that block the reconciliation needed to fix the misconfiguration — a self-reinforcing
+        deadlock recoverable only by manually deleting both webhook configurations.
+        <div class="ops-ref-link">→ docs/rca/rca-gatekeeper-flux-bootstrap.md</div>
+      </div>
+    </div>
+    <div class="ops-entry rca">
+      <div class="ops-ref">⚑ N-2</div>
+      <div class="ops-content">
+        <div class="ops-title">Missing flux-system exemption reproduces the same deadlock</div>
+        The Gatekeeper Config CR's <code>excludedNamespaces</code> list must include
+        <code>flux-system</code>. Without it, the <code>check-ignore-label</code> webhook
+        fires against Flux's namespace dry-runs. A misbehaving Gatekeeper webhook in
+        a GitOps environment can make the GitOps controller itself unable to remediate —
+        the tool designed to self-heal loses the ability to do so.
+        <div class="ops-ref-link">→ docs/rca/rca-gatekeeper-flux-bootstrap.md</div>
+      </div>
+    </div>
+    <div class="ops-entry validated">
+      <div class="ops-ref">✓ V-1</div>
+      <div class="ops-content">
+        <div class="ops-title">All three constraints validated against live cluster</div>
+        <code>require-resource-limits</code> — pod admitted with warnings, violations
+        recorded in <code>.status.violations</code> on the Constraint object.<br>
+        <code>deny-public-loadbalancer</code> — Service of type LoadBalancer denied in
+        <code>default</code> namespace; error message includes permitted namespace list.<br>
+        <code>restrict-model-namespace</code> — Pod with <code>component=model</code> label
+        denied in <code>default</code>; admitted in <code>ai-workloads</code>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--gray-hi)"></div>
+    Bootstrap
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--purple-hi)"></div>
+    Flux · GitOps layer
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--teal-hi)"></div>
+    Kubernetes · runtime
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--blue-hi)"></div>
+    Policy enforcement
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--warn)"></div>
+    warn enforcement
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--deny)"></div>
+    deny enforcement
+  </div>
+  <div class="legend-item">
+    <div class="legend-swatch" style="background:var(--admit)"></div>
+    validated / admitted
+  </div>
+</div>
+
+<footer>
+  <span>InfraFactory/ai-platform · docs/architecture/gatekeeper-installation-flow.html</span>
+  <span>AI Systems Architect Accelerator · Phase 1 · Week 2</span>
+</footer>
+
+</body>
+</html>

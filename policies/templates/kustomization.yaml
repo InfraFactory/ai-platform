@@ -4,3 +4,4 @@ resources:
   - require-resource-limits.yaml
   - deny-public-loadbalancer.yaml
   - restrict-model-namespace.yaml
+  - require-sa-token-control.yaml

@@ -206,6 +206,39 @@ guarantee.
 
 ## Implementation Notes
 
+```mermaid
+flowchart TD
+    A["01 · flux bootstrap\nGitRepository + flux-system Kustomization created"]
+    B["02 · cluster kustomization reconciled\nreads opa-gatekeeper.yaml + policies.yaml"]
+    C["03 · opa-gatekeeper resources applied\nNamespace · HelmRepository · HelmRelease · Config CR"]
+    D["04 · chart fetched by helm-controller\ngatekeeper@3.22.2 · crds: CreateReplace"]
+    E["05 · Helm installs into gatekeeper-system\ncontroller-manager + audit pods scheduled"]
+    F["06 · admission webhooks registered\nValidating + Mutating + check-ignore-label"]
+    G["07 · namespace exemptions active\nflux-system · gatekeeper-system · kube-system · monitoring"]
+    H["08 · ConstraintTemplates synced\ndependsOn: opa-gatekeeper · Rego compiled into OPA"]
+    I["09 · Constraints synced\ndependsOn: platform-policies-templates · enforcement active"]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
+
+    N1["⚑ N-1: omitting targetNamespace deploys into flux-system;\nwebhook deadlock blocks GitOps recovery"]
+    N2["⚑ N-2: flux-system must be in excludedNamespaces;\nomission reproduces the same deadlock"]
+
+    C -. "failure mode" .-> N1
+    G -. "failure mode" .-> N2
+
+    style A fill:#3a4450,stroke:#4a5560,color:#c8d4e0
+    style B fill:#5b3f8a,stroke:#7a56b8,color:#d0c0f0
+    style C fill:#5b3f8a,stroke:#7a56b8,color:#d0c0f0
+    style D fill:#5b3f8a,stroke:#7a56b8,color:#d0c0f0
+    style E fill:#1d6b6b,stroke:#2a9494,color:#c0e8e8
+    style F fill:#1d6b6b,stroke:#2a9494,color:#c0e8e8
+    style G fill:#1d6b6b,stroke:#2a9494,color:#c0e8e8
+    style H fill:#1a4a8a,stroke:#2a6abf,color:#b0cff0
+    style I fill:#1a4a8a,stroke:#2a6abf,color:#b0cff0
+    style N1 fill:#3a1010,stroke:#8a2a2a,color:#d06060
+    style N2 fill:#3a1010,stroke:#8a2a2a,color:#d06060
+```
+
 ### Critical: Namespace exemptions in values
 
 ```yaml
@@ -309,8 +342,8 @@ helm uninstall gatekeeper -n gatekeeper-system
 ## References
 
 - [OPA Gatekeeper — Policies and Governance for Kubernetes](https://open-policy-agent.github.io/gatekeeper/)
-- [ConstraintTemplate CRD spec](https://open-policy-agent.github.io/gatekeeper/website/docs/constrainttemplate/)
+- [ConstraintTemplate CRD spec](https://open-policy-agent.github.io/gatekeeper/website/docs/constrainttemplates/)
 - [Azure Policy for AKS — OPA Gatekeeper integration](https://learn.microsoft.com/en-us/azure/governance/policy/concepts/policy-for-kubernetes)
 - [Kubernetes Validating Admission Policy (KEP-3488)](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/)
-- [ADR-0001 Hub-Spoke vs vWAN](./0001-hub-spoke-vs-vwan.md)
+- [ADR-0005 Platform Ingress Strategy Following ingress-nginx Retirement](./0005-platform-ingress-strategy.md)
 - [RCA: Gatekeeper Flux bootstrap namespace mismatch](../rca/rca-gatekeeper-flux-bootstrap.md)
