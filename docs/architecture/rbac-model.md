@@ -191,7 +191,7 @@ rules:
   # Explicitly excluded: exec, portforward, secret data
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "list"]   # metadata only — data field requires explicit get on a named secret
+    verbs: ["get"]   # metadata only — data field requires explicit get on a named secret
 ```
 
 The observer cannot exec into pods, port-forward, or trigger any mutation. The

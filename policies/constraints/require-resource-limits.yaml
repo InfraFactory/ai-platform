@@ -3,7 +3,7 @@ kind: RequireResourceLimits
 metadata:
   name: require-resource-limits
 spec:
-  enforcementAction: deny      # warn first — existing workloads may not be compliant
+  enforcementAction: warn      # warn first — existing workloads may not be compliant
   match:
     kinds:
       - apiGroups: [""]

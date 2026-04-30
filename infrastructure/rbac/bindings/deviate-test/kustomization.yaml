@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - p2-sim-serviceaccount.yaml
+  - platform-admin-serviceaccount.yaml
+  - platform-admin-clusterrolebinding.yaml
+  - p2-sim-namespace-developer-rolebinding.yaml
