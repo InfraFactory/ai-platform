@@ -4,6 +4,17 @@ metadata:
   name: config
   namespace: gatekeeper-system
 spec:
+  sync:
+    syncOnly:
+      - group: ""
+        version: "v1"
+        kind: "Pod"
+      - group: ""
+        version: "v1"
+        kind: "Service"
+      - group: ""
+        version: "v1"
+        kind: "Namespace"
   match:
     - excludedNamespaces:
         - flux-system
