@@ -1,0 +1,43 @@
+name: RBAC Validate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/rbac/**'
+      - 'infrastructure/clusters/local/kustomization.yaml'
+      - 'docs/architecture/rbac-model.md'
+      - 'scripts/validate_rbac.py'
+      - '.github/workflows/rbac-validate.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/rbac/**'
+      - 'infrastructure/clusters/local/kustomization.yaml'
+      - 'docs/architecture/rbac-model.md'
+      - 'scripts/validate_rbac.py'
+      - '.github/workflows/rbac-validate.yml'
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  validate-rbac:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Validate RoleBinding and ClusterRoleBinding references
+        run: python3 scripts/validate_rbac.py bindings
+
+      - name: Validate RBAC manifests against the canonical model
+        run: python3 scripts/validate_rbac.py conformance

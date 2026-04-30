@@ -1,0 +1,22 @@
+# Failure mode 1: bad image (ImagePullBackOff)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-app
+  namespace: deviate-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-app
+  template:
+    metadata:
+      labels:
+        app: broken-app
+    spec:
+      containers:
+      - name: app
+        image: nginx:this-tag-does-not-exist  # deliberate bad tag
+        resources:
+          limits:
+            memory: "32Mi"  # also too small — OOMKill waiting if it did pull
