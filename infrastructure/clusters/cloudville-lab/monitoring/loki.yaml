@@ -16,6 +16,7 @@ spec:
   values:
     loki:
       auth_enabled: false
+      useTestSchema: true
       storage:
         type: filesystem
     singleBinary:
